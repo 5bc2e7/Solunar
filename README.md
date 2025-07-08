@@ -33,7 +33,7 @@ cd Solunar
 这是启动服务最简单、最可靠的方式。
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 服务将在 `http://localhost:8000` 上可用。
 
