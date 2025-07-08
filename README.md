@@ -158,11 +158,11 @@ volumes:
 
 **启动服务:**
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 **停止服务:**
 ```bash
-docker-compose down
+docker compose down
 ```
 
 #### 手动运行 Docker 容器
@@ -216,9 +216,6 @@ sudo systemctl daemon-reload
 sudo systemctl start solunar-api
 sudo systemctl enable solunar-api
 ```
-
-#### 4. 配置反向代理 (Nginx 示例)
-在 Nginx 中配置一个站点，将流量转发到 `http://127.0.0.1:8000`。
 
 ## 📜 版本历史
 *   **V4.2.0 (当前)**
