@@ -5,7 +5,7 @@
 [![Skyfield](https://img.shields.io/badge/Skyfield-1.47-orange.svg)](https://rhodesmill.org/skyfield/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-一个快速、轻量的API服务，旨在提供精确的日出日落、正午以及月相信息。它基于高性能的天文学库 [Skyfield](https://rhodesmill.org/skyfield/) 构建，并支持灵活的时区转换，确保数据符合用户所在地的实际情况。
+一个快速、轻量的API服务，旨在提供精确的日出日落、正午以及月相信息。基于高性能的天文学库 [Skyfield](https://rhodesmill.org/skyfield/) 构建，并支持灵活的时区转换，确保数据符合用户所在地的实际情况。
 
 **版本：** `4.2.0` - 稳定且已修复日出日落和月相计算逻辑。
 
