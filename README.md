@@ -278,50 +278,7 @@ server {
 
 使用 Docker 部署可以提供更好的环境隔离和可移植性。
 
-#### 1. 创建 `Dockerfile`
-
-在项目根目录下创建名为 `Dockerfile` 的文件：
-
-```dockerfile
-# 使用官方Python运行时作为基础镜像
-FROM python:3.10-slim-buster
-
-# 设置工作目录
-WORKDIR /app
-
-# 复制requirements.txt并安装依赖
-# 使用 --no-cache-dir 减少镜像大小
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# 复制应用程序代码到容器中
-COPY . .
-
-# 暴露应用程序运行的端口
-EXPOSE 8000
-
-# 创建一个目录用于存储skyfield数据，并设置权限
-# Skyfield 默认在 ~/.skyfield/ 下载数据
-# 我们将其映射到 /app/.skyfield，确保容器内有写入权限
-# 这样数据会存储在容器内的工作目录，或者可以通过卷挂载到宿主机
-RUN mkdir -p /app/.skyfield && chmod -R 777 /app/.skyfield
-
-# 设置环境变量，指定Skyfield数据目录（可选，但推荐）
-# 这确保Skyfield将数据下载到 /app/.skyfield
-ENV SKYFIELD_DATA=/app/.skyfield
-
-# 定义启动命令
-# CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-# 生产环境更推荐使用gunicorn作为WSGI服务器
-CMD ["gunicorn", "main:app", "--workers", "2", "--bind", "0.0.0.0:8000", "--worker-class", "uvicorn.workers.UvicornWorker"]
-
-```
-
-*   **关于 `CMD`:**
-    *   直接使用 `uvicorn` 适合简单部署。
-    *   使用 `gunicorn` + `uvicorn.workers.UvicornWorker` 是 FastAPI 官方推荐的生产部署方式，可以更好地管理进程和处理并发。`--workers` 参数可以根据CPU核心数调整。
-
-#### 2. 构建 Docker 镜像
+#### 1. 构建 Docker 镜像
 
 在项目根目录下运行以下命令构建镜像：
 
@@ -330,7 +287,7 @@ docker build -t celestial-api .
 ```
 这会创建一个名为 `celestial-api` 的镜像。
 
-#### 3. 运行 Docker 容器
+#### 2. 运行 Docker 容器
 
 您可以直接运行容器：
 
