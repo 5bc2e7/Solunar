@@ -37,23 +37,12 @@
 首先，将项目代码克隆到您的本地机器：
 
 ```bash
-git clone https://github.com/your-username/celestial-api.git # 替换为您的实际仓库URL
+git clone https://github.com/5bc2e7/Solunar.git
 cd celestial-api                                             # 进入项目目录
 ```
 
 ### 3. 安装依赖
-
-在项目根目录下，创建一个名为 `requirements.txt` 的文件，并写入以下内容：
-
-```
-fastapi==0.111.0
-uvicorn==0.30.1
-skyfield==1.47
-pytz==2024.1
-numpy==1.26.4
-```
-
-然后使用 `pip` 安装所有必要的库：
+使用 `pip` 安装所有必要的库：
 
 ```bash
 pip install -r requirements.txt
