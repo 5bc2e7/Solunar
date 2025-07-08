@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  solunar-api:
+    build: .
+    container_name: solunar-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - skyfield_data:/app/.skyfield
+    restart: unless-stopped
+
+volumes:
+  skyfield_data:
+    driver: local
