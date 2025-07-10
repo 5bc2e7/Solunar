@@ -26,8 +26,8 @@
 
 ### 2. 获取项目
 ```bash
-git clone https://github.com/5bc2e7/Solunar.git
-cd Solunar
+git clone https://github.com/5bc2e7/SolunarAPI.git
+cd SolunarAPI
 ```
 
 ### 3. 启动服务
