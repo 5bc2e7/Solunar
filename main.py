@@ -150,37 +150,87 @@ def get_sun_times(
     }
 
 @app.get("/api/moon")
-def get_moon_phase(
+def get_moon_info(
+    lat: float = Query(..., description="纬度，例如：39.9 (北京)", ge=-90, le=90),
+    lon: float = Query(..., description="经度，例如：116.4 (北京)", ge=-180, le=180),
+    target_date: date = Query(None, description="目标日期 (YYYY-MM-DD)，默认为今天"),
     tz: str = Query("UTC", description="输出时区，例如 Asia/Shanghai 或 UTC")
 ):
-    """获取当前的月相信息。"""
-    t = ts.now() # 获取当前时间
+    """计算指定地点的月出、月落、中天时间，并提供当日的月相信息。"""
+    if target_date is None:
+        target_date = date.today()
 
-    # 太阳-月球-地球夹角 (0-180度)，直接影响照亮百分比
-    # 0度=新月，180度=满月
-    sun_moon_earth_angle = almanac.phase_angle(eph, 'moon', t) 
+    observer_topos = Topos(latitude_degrees=lat, longitude_degrees=lon)
     
-    # 月球被照亮的百分比 (0.0到1.0之间的分数)
-    illumination_fraction = almanac.fraction_illuminated(eph, 'moon', t) # 返回的是浮点数
+    try:
+        tz_obj = pytz.timezone(tz)
+    except pytz.UnknownTimeZoneError:
+        tz_obj = pytz.utc
+        tz = "UTC"
+
+    local_midnight_start = tz_obj.localize(datetime(target_date.year, target_date.month, target_date.day, 0, 0, 0))
+    utc_start_dt = local_midnight_start.astimezone(pytz.utc)
+    t0 = ts.utc(utc_start_dt.year, utc_start_dt.month, utc_start_dt.day,
+                utc_start_dt.hour, utc_start_dt.minute, utc_start_dt.second)
+    t1 = t0 + 1
+
+    moon = eph['moon']
+
+    # 查找月出和月落
+    f = almanac.risings_and_settings(eph, moon, observer_topos)
+    times, events = almanac.find_discrete(t0, t1, f)
+
+    results_utc = {"moonrise": None, "moontransit": None, "moonset": None}
+
+    for t, event in zip(times, events):
+        event_date_in_tz = tz_obj.normalize(t.astimezone(tz_obj)).date()
+        if event_date_in_tz == target_date:
+            if event == 1 and results_utc["moonrise"] is None: # 1 是升起
+                results_utc["moonrise"] = t.utc_iso()
+            elif event == 0 and results_utc["moonset"] is None: # 0 是降落
+                results_utc["moonset"] = t.utc_iso()
+
+    # 查找中天
+    transit_function = almanac.meridian_transits(eph, moon, observer_topos)
+    transit_times, transit_events = almanac.find_discrete(t0, t1, transit_function)
+
+    noon_t_for_phase = None
+    if transit_times:
+        for i, transit_t in enumerate(transit_times):
+            if transit_events[i] == 1: # 1表示上中天
+                transit_date_in_tz = tz_obj.normalize(transit_t.astimezone(tz_obj)).date()
+                if transit_date_in_tz == target_date:
+                    results_utc["moontransit"] = transit_t.utc_iso()
+                    noon_t_for_phase = transit_t # 使用中天时间计算月相
+                    break
     
-    # 月龄轨道角度 (0-360度)，这是月球在其轨道上相对于太阳的黄经差
-    # 0度=新月，90度=上弦月，180度=满月，270度=下弦月
-    moon_phase_orbital_angle = almanac.moon_phase(eph, t) 
+    if noon_t_for_phase is None:
+        noon_t_for_phase = ts.utc(target_date.year, target_date.month, target_date.day, 12)
+
+    # --- 月相计算 ---
+    sun_moon_earth_angle = almanac.phase_angle(eph, 'moon', noon_t_for_phase)
+    illumination_fraction = almanac.fraction_illuminated(eph, 'moon', noon_t_for_phase)
+    moon_phase_orbital_angle = almanac.moon_phase(eph, noon_t_for_phase)
     
-    # 提取并四舍五入值
     sun_moon_earth_angle_degrees = round(sun_moon_earth_angle.degrees, 2)
-    illumination_percent = round(illumination_fraction * 100, 2) # 修正: 直接乘以100
+    illumination_percent = round(illumination_fraction * 100, 2)
     moon_phase_orbital_degrees = round(moon_phase_orbital_angle.degrees, 2)
-
-    # 根据照亮百分比和月龄角度获取月相名称
     phase_name = get_moon_phase_name(illumination_percent, moon_phase_orbital_degrees)
-    
+
+    # 转换时区
+    results_local = {key: convert_to_timezone(value, tz) for key, value in results_utc.items()}
+
     return {
-        "timestamp": convert_to_timezone(t.utc_iso(), tz),
+        "location": {"latitude": lat, "longitude": lon},
+        "date": target_date.isoformat(),
         "timezone": tz,
-        "sun_moon_earth_angle_degrees": sun_moon_earth_angle_degrees, # 太阳-月球-地球夹角，影响亮度
-        "moon_phase_orbital_degrees": moon_phase_orbital_degrees, # 月球在轨道上的角度，用于判断盈亏
-        "illumination_percent": illumination_percent,
-        "phase_name": phase_name
+        "times": results_local,
+        "phase_info_at_transit": {
+            "timestamp_for_phase_calc": convert_to_timezone(noon_t_for_phase.utc_iso(), tz),
+            "sun_moon_earth_angle_degrees": sun_moon_earth_angle_degrees,
+            "moon_phase_orbital_degrees": moon_phase_orbital_degrees,
+            "illumination_percent": illumination_percent,
+            "phase_name": phase_name
+        }
     }
 

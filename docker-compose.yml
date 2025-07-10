@@ -7,8 +7,15 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - skyfield_data:/app/.skyfield
+      # Mount the named volume to the correct path inside the container
+      # Skyfield downloads data to the user's home directory (~/.skyfield)
+      - skyfield_data:/home/appuser/.skyfield
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   skyfield_data:

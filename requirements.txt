@@ -1,5 +1,3 @@
-# /root/astro-api/requirements.txt (轻量版)
-
 fastapi
 uvicorn[standard]
 skyfield

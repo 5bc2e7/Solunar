@@ -1,28 +1,40 @@
-# Dockerfile
+# Dockerfile (V2 - Multi-stage build)
 
-# 使用官方Python基础镜像
+# --- STAGE 1: Builder ---
+# This stage installs dependencies into a target directory.
+FROM python:3.10-slim AS builder
+
+# Create a non-root user for security
+RUN useradd --create-home appuser
+WORKDIR /home/appuser
+
+# Install python dependencies into a specific directory
+# This allows us to copy just the installed packages to the next stage.
+COPY requirements.txt .
+RUN pip install \
+    --no-cache-dir \
+    --prefix="/home/appuser/install" \
+    -r requirements.txt
+
+# --- STAGE 2: Final Image ---
+# This stage builds the final, lean image.
 FROM python:3.10-slim
 
-# 设置工作目录
-WORKDIR /app
+# Create a non-root user and set it as the current user
+RUN useradd --create-home appuser
+USER appuser
+WORKDIR /home/appuser/app
 
-# 复制依赖文件
-COPY requirements.txt ./
+# Copy installed dependencies from the builder stage
+COPY --from=builder /home/appuser/install /usr/local
 
-# 安装系统依赖（对于netCDF4等库可能需要）
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libnetcdf-dev \
-    libhdf5-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# 安装Python依赖
-RUN pip install --no-cache-dir -r requirements.txt
-
-# 复制应用代码
+# Copy the application code
 COPY . .
 
-# 暴露端口
+# Expose the port the app runs on
 EXPOSE 8000
 
-# 运行命令
+# Set the command to run the application
+# We add the installed packages' bin to the PATH to find uvicorn
+ENV PATH="/usr/local/bin:$PATH"
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
