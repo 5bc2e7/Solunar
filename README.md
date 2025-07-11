@@ -116,8 +116,6 @@ curl "http://localhost:8000/api/moon?lat=21.91&lon=114.29&target_date=2025-07-11
 项目根目录下的 `docker-compose.yml` 文件已为您配置好一切：
 
 ```yaml
-version: '3.8'
-
 services:
   solunar-api:
     build: .
